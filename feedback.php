@@ -48,16 +48,12 @@ if (!empty($_POST)) {
             $response .= "2. Register Event \n";
             $response .= "3. My Registered Events \n";
         } else {
+            $newLevel = 2;
             switch ($userResponse){
                 //user wants to give feedback to an event
                 //user wants to register an event
                 case "1":
                 case "2":
-                    //We graduate the user to level 2
-                    $levelUpdate = "UPDATE `session_levels` SET `level`=2
-                        WHERE `session_id`='" . $sessionId . "'";
-                    $db->query($levelUpdate);
-
                     $response = "CON Enter the name of the event:";
                     break;
 
@@ -73,7 +69,7 @@ if (!empty($_POST)) {
                         $response = "CON Please select an event to view its details: \n";
                         $count = 1;
                         while ($row = mysqli_fetch_assoc($eventQuery)) {
-                            $response .= $count . ". " . $row['accountNo'] . " \n";
+                            $response .= $count . ". " . $row['name'] . " \n";
                             $count++;
                         }
                     }
@@ -86,8 +82,15 @@ if (!empty($_POST)) {
                     $response .= "1. Give feedback \n";
                     $response .= "2. Register Event \n";
                     $response .= "3. My Registered Events \n";
+
+                    $newLevel = 1;
                     break;
             }
+
+            //We graduate the user to the next level
+            $levelUpdate = "UPDATE `session_levels` SET `level`= '" . $newLevel . "'
+                        WHERE `session_id`='" . $sessionId . "'";
+            $db->query($levelUpdate);
         }
     }else if ($level == 2){
 
@@ -135,7 +138,8 @@ if (!empty($_POST)) {
                 //check if name has been taken
                 if ($eventAvail == 1){
                     //event name taken, start questions
-                    $response = "END That event name has already been taken. Please try another name. \n";
+                    $response = "CON That event name has already been taken. Please try another name: \n";
+                    $newLevel = 2;
                 }else{
                     //confirm registration of event name
                     $response = "CON The event name ". $userResponse ." is available. Create an event with this name? \n";
@@ -147,7 +151,30 @@ if (!empty($_POST)) {
 
             //my events
             case "3":
-                //display events registered with the user
+                //display the chosen event's details
+                $sql = "SELECT * FROM `events` WHERE `phonenumber`='" . $phoneNumber . "'";
+                $eventQuery = $db->query($sql);
+                if (!$eventQuery) {
+                    $response = "END You do not have an event registered with us. \n";
+                    break;
+                } else {
+                    $count = 1;
+                    while ($row = mysqli_fetch_assoc($eventQuery)) {
+                        if ($count == $userResponse) {
+                            //get number of feedback response
+                            $feedSql = "SELECT * FROM `event_feedback` WHERE `event_name`='" . $row['name'] . "'";
+                            $feedbackQuery = $db->query($feedSql);
+                            $feedbackCount = 0;
+                            while (mysqli_fetch_assoc($feedbackQuery) ){
+                                $feedbackCount++;
+                            }
+
+                            $response = "END Event Name: " . $row['name'] . " \n Number of responses: " . $feedbackCount;
+                            break;
+                        }
+                        $count++;
+                    }
+                }
 
                 break;
 
