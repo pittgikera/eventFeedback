@@ -204,6 +204,24 @@ if (!empty($_POST)) {
                     $db->query($insertQuery);
                     $response = "END Event created successfully. We will contact you shortly with instructions on how to add
                  the questions. \n";
+				 $message    = "Send a message to 20414 with the questions  starting with 125 separated with #. e.g 125 How would you rate the event#How would you rate the food#";
+
+// Create a new instance of our awesome gateway class
+$gateway    = new AfricasTalkingGateway($username_at, $apikey);
+
+// Any gateway error will be captured by our custom Exception class below, 
+// so wrap the call in a try-catch block
+
+try 
+{ 
+  // Thats it, hit send and we'll take care of the rest. 
+  $gateway->sendMessage($phoneNumber, $message);
+			
+}
+catch ( AfricasTalkingGatewayException $e )
+{
+  echo "Encountered an error while sending: ".$e->getMessage();
+}
                 }elseif ($userResponse == 2){
                     $response = "END Event creation cancelled. \n";
                 }else{
