@@ -29,7 +29,7 @@ if (!empty($_POST)) {
     $firstResult = $db->query($firstQuery);
     $userAvail = $firstResult->fetch_assoc();
 
-    if ($level == 0){
+    if ($level == 0) {
         //We graduate the user to level 1
         $insertQuery = "INSERT INTO `session_levels`(`session_id`, `phoneNumber`,`level`) VALUES('" . $sessionId . "','" . $phoneNumber . "', 1)";
         $db->query($insertQuery);
@@ -39,7 +39,7 @@ if (!empty($_POST)) {
         $response .= "1. Give feedback \n";
         $response .= "2. Register Event \n";
         $response .= "3. My Registered Events \n";
-    }else if ($level == 1){
+    } else if ($level == 1) {
         //If user sends back nothing, we resend home menu
         if ($userResponse == "") {
             //We show the user the home menu
@@ -49,7 +49,7 @@ if (!empty($_POST)) {
             $response .= "3. My Registered Events \n";
         } else {
             $newLevel = 2;
-            switch ($userResponse){
+            switch ($userResponse) {
                 //user wants to give feedback to an event
                 //user wants to register an event
                 case "1":
@@ -92,7 +92,7 @@ if (!empty($_POST)) {
                         WHERE `session_id`='" . $sessionId . "'";
             $db->query($levelUpdate);
         }
-    }else if ($level == 2){
+    } else if ($level == 2) {
 
         //fetch the event using the event name entered
         //Check the level
@@ -114,7 +114,7 @@ if (!empty($_POST)) {
             //give feedback
             case "1":
                 //check if event exists
-                if ($eventAvail == 1){
+                if ($eventAvail == 1) {
                     //event exists, start questions
 
                     $sql = "SELECT * FROM `event_questions` WHERE `event_name`='" . $userResponse . "'";
@@ -127,7 +127,7 @@ if (!empty($_POST)) {
                     $response .= "3. Neutral \n";
                     $response .= "4. Bad \n";
                     $response .= "5. Very Bad \n";
-                }else{
+                } else {
                     $response = "END That event does not exist. Please make sure you have the correct name then try again. \n";
                 }
 
@@ -136,13 +136,13 @@ if (!empty($_POST)) {
             //register event
             case "2":
                 //check if name has been taken
-                if ($eventAvail == 1){
+                if ($eventAvail == 1) {
                     //event name taken, start questions
                     $response = "CON That event name has already been taken. Please try another name: \n";
                     $newLevel = 2;
-                }else{
+                } else {
                     //confirm registration of event name
-                    $response = "CON The event name ". $userResponse ." is available. Create an event with this name? \n";
+                    $response = "CON The event name " . $userResponse . " is available. Create an event with this name? \n";
                     $response .= "1. Accept \n";
                     $response .= "2. Decline \n";
                 }
@@ -165,7 +165,7 @@ if (!empty($_POST)) {
                             $feedSql = "SELECT * FROM `event_feedback` WHERE `event_name`='" . $row['name'] . "'";
                             $feedbackQuery = $db->query($feedSql);
                             $feedbackCount = 0;
-                            while (mysqli_fetch_assoc($feedbackQuery) ){
+                            while (mysqli_fetch_assoc($feedbackQuery)) {
                                 $feedbackCount++;
                             }
 
@@ -188,8 +188,8 @@ if (!empty($_POST)) {
         $levelUpdate = "UPDATE `session_levels` SET `level`= '" . $newLevel . "'
                         WHERE `session_id`='" . $sessionId . "'";
         $db->query($levelUpdate);
-        
-    }else if ($level == 3){
+
+    } else if ($level == 3) {
         //used to know which option the user chose
         $choice = $textArray[0];
         $newLevel = 4;
@@ -204,74 +204,31 @@ if (!empty($_POST)) {
                     $db->query($insertQuery);
                     $response = "END Event created successfully. We will contact you shortly with instructions on how to add
                  the questions. \n";
-				 $message    = "Send a message to 20414 with the questions  starting with 125 separated with #. e.g 125 How would you rate the event#How would you rate the food#";
+                    $message = "Send a message to 20414 with the questions  starting with 125 separated with #. e.g 125 How would you rate the event#How would you rate the food#";
 
-// Create a new instance of our awesome gateway class
-$gateway    = new AfricasTalkingGateway($username_at, $apikey);
+                    // Create a new instance of our awesome gateway class
+                    $gateway = new AfricasTalkingGateway($username_at, $apikey);
 
-// Any gateway error will be captured by our custom Exception class below, 
-// so wrap the call in a try-catch block
+                    // Any gateway error will be captured by our custom Exception class below, 
+                    // so wrap the call in a try-catch block
 
-try 
-{ 
-  // Thats it, hit send and we'll take care of the rest. 
-  $gateway->sendMessage($phoneNumber, $message);
-			
-}
-catch ( AfricasTalkingGatewayException $e )
-{
-  echo "Encountered an error while sending: ".$e->getMessage();
-}
-                }elseif ($userResponse == 2){
+                    try {
+                        // That's it, hit send and we'll take care of the rest. 
+                        $gateway->sendMessage($phoneNumber, $message);
+
+                    } catch (AfricasTalkingGatewayException $e) {
+                        echo "Encountered an error while sending: " . $e->getMessage();
+                    }
+                } elseif ($userResponse == 2) {
                     $response = "END Event creation cancelled. \n";
-                }else{
+                } else {
                     $response = "END Event creation failed. Invalid input. \n";
                 }
                 break;
         }
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     //Print the response onto the page so that the ussd API/gateway can read it
     header("Content-type: text/plain");
     echo $response;
