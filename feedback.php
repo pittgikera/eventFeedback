@@ -100,9 +100,9 @@ if (!empty($_POST)) {
         $eventAvail = 0;
         $sql = "SELECT * FROM `events` WHERE LOWER(`name`) LIKE LOWER('%" . $userResponse . "%')";
         $eventQuery = $db->query($sql);
+        $eventDetails = $eventQuery->fetch_assoc();
 
-
-        if ($result = $eventQuery->fetch_assoc()) {
+        if ($result = $eventDetails) {
             $eventAvail = 1;
         }
         //used to know which option the user chose
@@ -117,16 +117,10 @@ if (!empty($_POST)) {
                 if ($eventAvail == 1) {
                     //event exists, start questions
 
-                    $sql = "SELECT * FROM `event_questions` WHERE `event_name`='" . $userResponse . "'";
-                    $eventQuery = $db->query($sql);
+                    $response = "CON Give your answer in the form of ratings (1 - 10) where: \n 1   ==> Bad \n 10 ==> Good \n";
+                    $response .= "1. Accept \n";
+                    $response .= "2. Decline \n";
 
-
-                    $response = "CON You will give feedback  \n";
-                    $response .= "1. Very Good \n";
-                    $response .= "2. Good \n";
-                    $response .= "3. Neutral \n";
-                    $response .= "4. Bad \n";
-                    $response .= "5. Very Bad \n";
                 } else {
                     $response = "END That event does not exist. Please make sure you have the correct name then try again. \n";
                 }
@@ -195,15 +189,69 @@ if (!empty($_POST)) {
         $newLevel = 4;
 
         switch ($choice) {
-            //give feedback
+            //save user response
+            case 1:
+                if ($textArray[2] == 1) {
+                    $sql = "SELECT * FROM `events` WHERE LOWER(`name`) LIKE LOWER('%" . $textArray[1] . "%')";
+                    $eventQuery = $db->query($sql);
+                    $eventDetails = $eventQuery->fetch_assoc();
+
+                    $sql = "SELECT * FROM `smsresponse` WHERE `from`='" . $eventDetails['phonenumber'] . "'";
+                    $smsQuery = $db->query($sql);
+                    $smsResponse = $smsQuery->fetch_assoc();
+
+                    //$questions = "How was is it? # Was it enjoyable?# Did you have fun? # Will you come back?";
+                    $questions = $smsResponse['text'];
+                    //we use array filter to remove indices whose values are empty
+                    $questionsArray = array_filter(explode('#', $questions));
+                    $responseArray = array_filter(explode('*', $text));
+                    if (count($questionsArray) < 1) {
+                        $response = "END " . "We don't have questions for you today!";
+                    } else {
+                        $currentQuestion = null;
+                        for ($i = 0; $i < count($questionsArray); $i++) {
+                            if (isset($responseArray[$i + 1])) {
+                                //question has been answered
+                            } else {
+                                //question not answered
+                                $currentQuestion = $i;
+                                break;
+
+                            }
+                        }
+                        if (is_null($currentQuestion)) {
+                            //if the current question is null, they've answered everything
+                            $parts = $textArray;
+                            unset($parts[0]);
+                            unset($parts[1]);
+                            unset($parts[2]);
+                            $eventResponse = implode('*', $parts);
+
+                            $eventName = $textArray[1];
+                            $insertQuery = "INSERT INTO `event_feedback`(`event_name`, `phoneNumber`,`response`) VALUES('" . $eventName . "','" . $eventDetails['phonenumber'] . "', '".$eventResponse."')";
+                            $db->query($insertQuery);
+
+                            $response = "END " . "You have answered everything";
+                        } else {
+                            //show that question now!
+                            $response = "CON " . $questionsArray[$currentQuestion];
+                        }
+                    }
+                }else{
+                    $response = "END " . "Thank you for using Event Feedback";
+                }
+
+                break;
+
+
+            //create event
             case "2":
                 if ($userResponse == 1) {
                     //save event to database
                     $eventName = $textArray[1];
                     $insertQuery = "INSERT INTO `events`(`name`, `phoneNumber`,`status`) VALUES('" . $eventName . "','" . $phoneNumber . "', 'ACTIVE')";
                     $db->query($insertQuery);
-                    $response = "END Event created successfully. We will contact you shortly with instructions on how to add
-                 the questions. \n";
+                    $response = "END Event created successfully. We will contact you shortly with instructions on how to add the questions. \n";
                     $message = "Send a message to 20414 with the questions  starting with 125 separated with #. e.g 125 How would you rate the event#How would you rate the food#";
 
                     // Create a new instance of our awesome gateway class
